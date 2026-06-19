@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Truths & a Lie — Party Game</title>
+<style>
+  @font-face {
+    font-family: 'Fraunces';
+    src: local('Fraunces');
+  }
+  :root {
+    --ink: #1c1a17;
+    --paper: #faf6ee;
+    --paper-dim: #f1ebdc;
+    --card: #ffffff;
+    --line: #e3dcc9;
+    --accent: #c4502b;
+    --accent-dark: #8f3a1f;
+    --accent-light: #f3ddd0;
+    --truth: #2f6f4e;
+    --truth-light: #dcefe2;
+    --lie: #b13434;
+    --lie-light: #f6dcdc;
+    --gold: #c1962f;
+    --gold-light: #f5ecd4;
+    --muted: #8a8275;
+    --shadow: 0 2px 0 rgba(28,26,23,0.06);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(196,80,43,0.05), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(143,58,31,0.05), transparent 40%);
+  }
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    min-height: 100vh;
+  }
+  .brandbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .brand {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .brand span { color: var(--accent); }
+  .room-pill {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .room-pill b { color: var(--ink); font-family: 'Courier New', monospace; letter-spacing: 0.08em; }
+
+  h1 { font-family: Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 8px; font-weight: 700; }
+  h2 { font-family: Georgia, serif; font-size: 21px; margin: 0 0 4px; font-weight: 700; }
+  .sub { color: var(--muted); font-size: 15px; margin: 0 0 28px; line-height: 1.5; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: 16px; }
+
+  button {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 20px;
+    cursor: pointer;
+    transition: transform 0.08s ease, opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff8f2;
+    width: 100%;
+  }
+  .btn-primary:not(:disabled):hover { background: var(--accent-dark); }
+  .btn-secondary {
+    background: var(--paper-dim);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  input, textarea, select {
+    font-family: inherit;
+    font-size: 15px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  label.field-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 6px;
+  }
+  .field { margin-bottom: 16px; }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  .stepper {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--paper-dim); border-radius: 10px; padding: 10px 14px;
+  }
+  .stepper button {
+    width: 34px; height: 34px; padding: 0;
+    border-radius: 8px; background: var(--card); border: 1px solid var(--line);
+    font-size: 18px; line-height: 1; color: var(--accent);
+  }
+  .stepper .val { font-size: 17px; font-weight: 700; min-width: 28px; text-align: center; }
+  .stepper .lbl { color: var(--muted); font-size: 13.5px; flex: 1; }
+
+  .player-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--paper-dim); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 13px 7px 7px; font-size: 14px; font-weight: 600;
+  }
+  .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .chip-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+
+  .timer-ring-wrap { position: relative; width: 88px; height: 88px; margin: 0 auto 18px; }
+  .timer-ring-wrap svg { transform: rotate(-90deg); }
+  .timer-num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; font-family: Georgia, serif;
+  }
+
+  .statement-input {
+    border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px;
+    margin-bottom: 10px; background: var(--paper);
+  }
+  .statement-input .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent-light);
+    color: var(--accent-dark); font-size: 11px; font-weight: 700; margin-right: 8px;
+  }
+  .statement-input textarea {
+    border: none; padding: 0; margin-top: 8px; resize: none; min-height: 44px; background: transparent;
+  }
+  .statement-input textarea:focus { border: none; }
+  .char-count { font-size: 12px; color: var(--muted); text-align: right; margin-top: 2px; }
+
+  .review-statement {
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; cursor: pointer; transition: all 0.15s ease;
+    background: var(--card); position: relative;
+  }
+  .review-statement:hover { border-color: var(--accent); }
+  .review-statement.picked-lie { border-color: var(--lie); background: var(--lie-light); }
+  .review-statement .stext { font-size: 16px; line-height: 1.5; padding-right: 30px; }
+  .review-statement .pick-badge {
+    position: absolute; top: 14px; right: 14px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--lie); display: none;
+  }
+  .review-statement.picked-lie .pick-badge { display: block; }
+  .review-statement.locked { cursor: default; opacity: 0.55; }
+  .review-statement.no-hover:hover { border-color: var(--line); }
+  .mark-btn {
+    flex: 1; padding: 9px 0; font-size: 13.5px; font-weight: 600;
+    border-radius: 8px; border: 1.5px solid var(--line); background: var(--paper);
+    color: var(--muted); cursor: pointer;
+  }
+  .mark-btn.mark-truth.active { background: var(--truth-light); border-color: var(--truth); color: var(--truth); }
+  .mark-btn.mark-lie.active { background: var(--lie-light); border-color: var(--lie); color: var(--lie); }
+
+  .reveal-statement {
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; position: relative;
+  }
+  .reveal-statement.is-truth { border-color: var(--truth); background: var(--truth-light); }
+  .reveal-statement.is-lie { border-color: var(--lie); background: var(--lie-light); }
+  .reveal-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .is-truth .reveal-tag { background: var(--truth); color: #fff; }
+  .is-lie .reveal-tag { background: var(--lie); color: #fff; }
+  .reveal-statement .stext { font-size: 16px; line-height: 1.5; }
+  .voter-marks { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .voter-mark {
+    font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600;
+  }
+  .voter-mark.correct { background: var(--truth-light); color: var(--truth); }
+  .voter-mark.wrong { background: var(--lie-light); color: var(--lie); }
+
+  .leaderboard-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .leaderboard-row:last-child { border-bottom: none; }
+  .rank {
+    font-family: Georgia, serif; font-weight: 700; font-size: 16px;
+    color: var(--muted); width: 22px;
+  }
+  .rank.gold { color: var(--gold); }
+  .lb-name { flex: 1; font-weight: 600; font-size: 15px; }
+  .lb-score { font-family: Georgia, serif; font-weight: 700; font-size: 18px; }
+  .lb-delta { font-size: 12.5px; color: var(--truth); font-weight: 600; min-width: 48px; text-align: right; }
+
+  .progress-dots { display: flex; gap: 6px; justify-content: center; margin: 18px 0 4px; }
+  .progress-dots .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .progress-dots .dot.done { background: var(--truth); }
+  .progress-dots .dot.active { background: var(--accent); }
+
+  .center { text-align: center; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .mb0 { margin-bottom: 0 !important; }
+  .mt20 { margin-top: 20px; }
+  .mt8 { margin-top: 8px; }
+
+  .copy-box {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--paper-dim); border: 1.5px dashed var(--accent);
+    border-radius: 12px; padding: 16px 18px; margin: 18px 0;
+  }
+  .copy-box .code {
+    font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700;
+    letter-spacing: 0.12em; color: var(--accent-dark);
+  }
+  .copy-box button { width: auto; padding: 9px 16px; font-size: 13px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper); padding: 11px 20px;
+    border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 999;
+    opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
+    max-width: 88%; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .spin {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--line); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite; display: inline-block; vertical-align: -3px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); }
+
+  footer-note {
+    display: block; text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 30px;
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 25px; }
+    .card { padding: 17px; }
+    .copy-box .code { font-size: 23px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   TWO TRUTHS & A LIE — multi-device party game
+
+   STORAGE MODEL (avoids lost-update races with 10-12 concurrent writers):
+   Each entity below is written ONLY by its single owner, so no two
+   clients ever race to write the same key:
+
+     room:{CODE}:meta              — written ONLY by the host (game phase,
+                                      timer, round number, turn order, scores)
+     room:{CODE}:player:{playerId} — written ONLY by that player (their own
+                                      name + that round's 3 statements + lie index)
+     room:{CODE}:pick:{targetId}:{voterId} — written ONLY by that voter
+                                      (their true/false marks on one target)
+     room:{CODE}:roster            — append-only join list; uses retry-on-
+                                      conflict since multiple players join
+                                      around the same moment (small blob,
+                                      low write frequency, short retry is fine)
+
+   Every client polls these keys on an interval and assembles a local view.
+   The host's tab alone runs the timer-driven phase transitions and is the
+   only writer of "meta", so those writes need no conflict handling at all.
+   ============================================================ */
+
+const POLL_MS = 900;
+const NAME_COLORS = ['#c4502b','#2f6f4e','#3a6ea5','#a5562f','#6b4ea5','#2f8f8a','#a53a6e','#8a8a2f','#5a5a8a','#a53a3a','#3a8a5a','#8a5a2f'];
+
+function colorFor(name) {
+  let h = 0;
+  for (let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) % NAME_COLORS.length;
+  return NAME_COLORS[Math.abs(h)];
+}
+function initials(name) {
+  return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+}
+function showToast(msg, ms=2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function genCode() {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let s = '';
+  for (let i=0;i<5;i++) s += letters[Math.floor(Math.random()*letters.length)];
+  return s;
+}
+function genId() {
+  return Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+}
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------------- Local identity (per browser tab) ---------------- */
+let ME = { id: genId(), name: '' };
+
+/* ---------------- Game constants ---------------- */
+const WRITE_SECONDS = 60;
+const REVIEW_SECONDS = 30;
+const REVEAL_SECONDS = 7;
+const SCOREBOARD_SECONDS = 6;
+const MAX_PLAYERS = 12;
+const MIN_PLAYERS = 3;
+
+/* ---------------- Low-level storage helpers ---------------- */
+async function storageGet(key) {
+  try {
+    const res = await window.storage.get(key, true);
+    return res ? JSON.parse(res.value) : null;
+  } catch (e) {
+    return null;
+  }
+}
+async function storageSet(key, value) {
+  try {
+    const res = await window.storage.set(key, JSON.stringify(value), true);
+    return !!res;
+  } catch (e) {
+    return false;
+  }
+}
+
+const k = {
+  meta: (code) => `room:${code}:meta`,
+  slot: (code, n) => `room:${code}:slot:${n}`,
+  player: (code, playerId) => `room:${code}:player:${playerId}`,
+  pick: (code, targetId, voterId) => `room:${code}:pick:${targetId}:${voterId}`,
+};
+
+/* Membership uses fixed numbered slots instead of a shared appended array.
+   Each slot is a single key holding one player's id. To join, a player
+   claims the lowest empty slot by writing their id into it, then reads
+   that EXACT key back. Because last-write-wins applies per key, reading
+   it back tells you definitively who actually landed there — if two
+   people raced for the same slot, the loser sees the winner's id on
+   read-back and moves on to try the next slot. This is real collision
+   detection (unlike checking your own presence in a shared list, which
+   can't distinguish "I won" from "I clobbered someone else"). */
+async function claimSlot(code, playerId) {
+  for (let round=0; round<3; round++) { // a few full sweeps in case of churn
+    for (let n=0; n<MAX_PLAYERS; n++) {
+      const slotKey = k.slot(code, n);
+      const existing = await storageGet(slotKey);
+      if (existing && existing.playerId && existing.playerId !== playerId) continue; // taken by someone else
+      if (existing && existing.playerId === playerId) return n; // already mine from a previous attempt
+      await storageSet(slotKey, { playerId });
+      await wait(40 + Math.random()*60);
+      const confirm = await storageGet(slotKey);
+      if (confirm && confirm.playerId === playerId) return n; // I won this slot
+      // someone else won the race for this slot — try the next one
+    }
+    await wait(150 + Math.random()*150);
+  }
+  return -1; // room is full or too contested
+}
+
+async function scanRoster(code) {
+  const slots = await Promise.all(
+    Array.from({length: MAX_PLAYERS}, (_, n) => storageGet(k.slot(code, n)))
+  );
+  return slots.filter(s => s && s.playerId).map(s => s.playerId);
+}
+function wait(ms) { return new Promise(r=>setTimeout(r, ms)); }
+
+/* ---------------- App state ---------------- */
+let state = {
+  screen: 'landing',
+  code: null,
+  isHost: false,
+  meta: null,           // host-owned game state
+  roster: [],            // array of playerIds in join order
+  players: {},           // assembled view: playerId -> player record
+  pollHandle: null,
+  driveHandle: null,
+  lastRenderedPhase: null,
+};
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  const header = renderHeader();
+  if (header) app.appendChild(header);
+
+  let body;
+  switch (state.screen) {
+    case 'landing': body = screenLanding(); break;
+    case 'lobby': body = screenLobby(); break;
+    case 'writing': body = screenWriting(); break;
+    case 'reviewing': body = screenReviewing(); break;
+    case 'reveal': body = screenReveal(); break;
+    case 'scoreboard': body = screenScoreboard(); break;
+    case 'finalboard': body = screenFinalBoard(); break;
+    default: body = document.createElement('div');
+  }
+  app.appendChild(body);
+}
+
+function renderHeader() {
+  if (state.screen === 'landing') return null;
+  const div = document.createElement('div');
+  div.className = 'brandbar';
+  div.innerHTML = `
+    <div class="brand">Two Truths<span>,</span> a Lie</div>
+    <div class="room-pill">Room <b>${state.code || ''}</b></div>
+  `;
+  return div;
+}
+
+/* ============================================================
+   SCREEN: LANDING
+   ============================================================ */
+function screenLanding() {
+  const wrap = document.createElement('div');
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefillCode = (urlParams.get('room') || '').toUpperCase().slice(0,5);
+
+  wrap.innerHTML = `
+    <div class="center" style="padding-top:10px;">
+      <div class="brand" style="font-size:30px; margin-bottom:6px;">Two Truths<span style="color:var(--accent)">,</span> a Lie</div>
+      <p class="muted" style="margin-bottom:32px;">A party game for 3&ndash;12 players. Everyone writes three statements about themselves &mdash; two true, one false &mdash; and the group tries to catch the lie.</p>
+    </div>
+    <div class="card">
+      <h2>Your name</h2>
+      <p class="muted small mb0" style="margin-bottom:14px;">This is how others will see you in the room.</p>
+      <div class="field">
+        <input id="name-input" type="text" placeholder="e.g. Mohit" maxlength="20" value="${escapeHtml(ME.name)}">
+      </div>
+      ${prefillCode ? `
+        <button class="btn-primary" id="join-btn">Join room ${prefillCode}</button>
+        <button class="btn-ghost mt8" id="create-instead-btn" style="width:100%;">Create a new room instead</button>
+      ` : `
+        <div class="row">
+          <button class="btn-primary" id="create-btn">Create a room</button>
+        </div>
+        <div style="margin-top:18px; padding-top:18px; border-top:1px solid var(--line);">
+          <label class="field-label">Have a room code?</label>
+          <div class="row">
+            <input id="join-code-input" type="text" placeholder="ROOM CODE" maxlength="5" style="text-transform:uppercase; letter-spacing:0.1em; font-weight:700;">
+            <button class="btn-secondary" id="join-btn-manual" style="flex:0 0 110px;">Join</button>
+          </div>
+        </div>
+      `}
+    </div>
+    <div class="footer-note">Host sets the rounds and starts the game &mdash; everything else runs automatically.</div>
+  `;
+
+  setTimeout(() => {
+    const nameInput = wrap.querySelector('#name-input');
+    const createBtn = wrap.querySelector('#create-btn');
+    const joinBtn = wrap.querySelector('#join-btn');
+    const joinBtnManual = wrap.querySelector('#join-btn-manual');
+    const joinInput = wrap.querySelector('#join-code-input');
+    const createInsteadBtn = wrap.querySelector('#create-instead-btn');
+
+    function validateName() {
+      const ok = nameInput.value.trim().length >= 1;
+      if (createBtn) createBtn.disabled = !ok;
+      if (joinBtn) joinBtn.disabled = !ok;
+      if (joinBtnManual) joinBtnManual.disabled = !ok;
+      return ok;
+    }
+    validateName();
+    nameInput.addEventListener('input', validateName);
+
+    createBtn?.addEventListener('click', async () => {
+      if (!validateName()) return;
+      ME.name = nameInput.value.trim();
+      createBtn.disabled = true;
+      createBtn.innerHTML = '<span class="spin"></span> Creating&hellip;';
+      const ok = await createRoom();
+      if (!ok) { createBtn.disabled = false; createBtn.textContent = 'Create a room'; }
+    });
+
+    createInsteadBtn?.addEventListener('click', () => {
+      window.history.replaceState({}, '', window.location.pathname);
+      render();
+    });
+
+    joinBtn?.addEventListener('click', async () => {
+      if (!validateName()) return;
+      ME.name = nameInput.value.trim();
+      joinBtn.disabled = true;
+      joinBtn.innerHTML = '<span class="spin"></span> Joining&hellip;';
+      const ok = await joinRoom(prefillCode);
+      if (!ok) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = 'Join room ' + prefillCode;
+        showToast("Couldn't join that room — check with whoever invited you");
+      }
+    });
+
+    joinBtnManual?.addEventListener('click', async () => {
+      if (!validateName()) return;
+      const code = joinInput.value.trim().toUpperCase();
+      if (code.length < 4) { showToast('Enter a valid room code'); return; }
+      ME.name = nameInput.value.trim();
+      joinBtnManual.disabled = true;
+      const ok = await joinRoom(code);
+      if (!ok) {
+        joinBtnManual.disabled = false;
+        showToast("Couldn't find that room — check the code");
+      }
+    });
+    joinInput?.addEventListener('input', () => {
+      joinInput.value = joinInput.value.toUpperCase();
+    });
+  }, 0);
+
+  return wrap;
+}
+
+async function createRoom() {
+  let code;
+  for (let attempt=0; attempt<6; attempt++) {
+    code = genCode();
+    const existing = await storageGet(k.meta(code));
+    if (!existing) break;
+  }
+  const meta = {
+    code,
+    hostId: ME.id,
+    createdAt: Date.now(),
+    phase: 'lobby',
+    rounds: 5,
+    currentRoundIndex: -1,
+    order: [],            // turn order for the active round (alphabetical)
+    reviewTargetIndex: null,
+    phaseEndsAt: null,
+    lastAwards: null,
+  };
+  const ok = await storageSet(k.meta(code), meta);
+  if (!ok) { showToast('Could not create room — try again'); return false; }
+
+  await storageSet(k.slot(code, 0), { playerId: ME.id });
+  await storageSet(k.player(code, ME.id), { id: ME.id, name: ME.name, score: 0, joinedAt: Date.now() });
+
+  state.code = code;
+  state.isHost = true;
+  state.meta = meta;
+  state.roster = [ME.id];
+  state.players = { [ME.id]: { id: ME.id, name: ME.name, score: 0, joinedAt: Date.now() } };
+  state.screen = 'lobby';
+  render();
+  startPolling();
+  startPhaseDriver();
+  return true;
+}
+
+async function joinRoom(code) {
+  const meta = await storageGet(k.meta(code));
+  if (!meta) return false;
+  if (meta.phase !== 'lobby') {
+    showToast('This game has already started');
+    return false;
+  }
+
+  const currentRoster = await scanRoster(code);
+  if (currentRoster.length >= MAX_PLAYERS && !currentRoster.includes(ME.id)) {
+    showToast('This room is full (12 players max)');
+    return false;
+  }
+
+  // de-duplicate display name against existing players
+  let finalName = ME.name;
+  const existingPlayers = await fetchAllPlayers(code, currentRoster);
+  const names = Object.values(existingPlayers).map(p => p.name.toLowerCase());
+  if (names.includes(finalName.toLowerCase())) {
+    finalName = finalName + ' ' + Math.floor(Math.random()*90+10);
+  }
+  ME.name = finalName;
+
+  await storageSet(k.player(code, ME.id), { id: ME.id, name: finalName, score: 0, joinedAt: Date.now() });
+  const slotIndex = await claimSlot(code, ME.id);
+  if (slotIndex === -1) {
+    showToast('This room is full or too busy right now — try again');
+    return false;
+  }
+
+  state.code = code;
+  state.isHost = (meta.hostId === ME.id);
+  state.meta = meta;
+  state.screen = 'lobby';
+  render();
+  startPolling();
+  startPhaseDriver(); // every client runs this; only the real host acts without delay
+  return true;
+}
+
+async function fetchAllPlayers(code, ids) {
+  const entries = await Promise.all(ids.map(async id => {
+    const p = await storageGet(k.player(code, id));
+    return [id, p];
+  }));
+  const out = {};
+  entries.forEach(([id, p]) => { if (p) out[id] = p; });
+  return out;
+}
+
+/* ============================================================
+   POLLING + STATE SYNC
+   ============================================================ */
+function startPolling() {
+  if (state.pollHandle) clearInterval(state.pollHandle);
+  state.pollHandle = setInterval(refreshFromStorage, POLL_MS);
+  refreshFromStorage();
+}
+
+async function refreshFromStorage() {
+  if (!state.code) return;
+  const meta = await storageGet(k.meta(state.code));
+  if (!meta) return;
+  const rosterIds = await scanRoster(state.code);
+  const players = await fetchAllPlayers(state.code, rosterIds);
+
+  // attach this round's statements (if any) onto each player record
+  if (meta.currentRoundIndex >= 0) {
+    await Promise.all(Object.keys(players).map(async id => {
+      const sub = await storageGet(k.player(state.code, id) + ':r' + meta.currentRoundIndex);
+      if (sub) { players[id].statements = sub.statements; players[id].lieIndex = sub.lieIndex; }
+      else { players[id].statements = null; players[id].lieIndex = null; }
+    }));
+  }
+
+  // attach picks for the current review target, if in reviewing/reveal phase
+  let picksForTarget = {};
+  if (meta.reviewTargetIndex !== null && meta.reviewTargetIndex !== undefined && meta.order[meta.reviewTargetIndex]) {
+    const targetId = meta.order[meta.reviewTargetIndex];
+    const entries = await Promise.all(Object.keys(players).map(async voterId => {
+      const p = await storageGet(k.pick(state.code, targetId, voterId));
+      return [voterId, p];
+    }));
+    entries.forEach(([voterId, p]) => { if (p) picksForTarget[voterId] = p.marks; });
+  }
+
+  state.meta = meta;
+  state.roster = rosterIds;
+  state.players = players;
+  state.currentPicksForTarget = picksForTarget;
+
+  syncScreenFromPhase();
+}
+
+function syncScreenFromPhase() {
+  const meta = state.meta;
+  if (!meta) return;
+  const phase = meta.phase;
+  let targetScreen = state.screen;
+  if (phase === 'lobby') targetScreen = 'lobby';
+  else if (phase === 'writing') targetScreen = 'writing';
+  else if (phase === 'reviewing') targetScreen = 'reviewing';
+  else if (phase === 'reveal') targetScreen = 'reveal';
+  else if (phase === 'roundscore') targetScreen = 'scoreboard';
+  else if (phase === 'finished') targetScreen = 'finalboard';
+
+  const phaseKey = phase + ':' + meta.currentRoundIndex + ':' + (meta.reviewTargetIndex ?? '');
+  if (targetScreen !== state.screen || phaseKey !== state.lastRenderedPhase) {
+    state.screen = targetScreen;
+    state.lastRenderedPhase = phaseKey;
+    render();
+  } else {
+    updateLiveBits();
+  }
+}
+
+function updateLiveBits() {
+  updateTimerDisplay();
+  updateLobbyPlayerList();
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer-num');
+  const ring = document.getElementById('timer-ring-fg');
+  if (!el || !state.meta || !state.meta.phaseEndsAt) return;
+  const totalMap = { writing: WRITE_SECONDS, reviewing: REVIEW_SECONDS, reveal: REVEAL_SECONDS, roundscore: SCOREBOARD_SECONDS };
+  const total = totalMap[state.meta.phase] || 30;
+  const remaining = Math.max(0, Math.ceil((state.meta.phaseEndsAt - Date.now())/1000));
+  el.textContent = remaining;
+  if (ring) {
+    const circumference = 2 * Math.PI * 38;
+    const pct = Math.max(0, Math.min(1, remaining/total));
+    ring.style.strokeDashoffset = circumference * (1-pct);
+  }
+  el.style.color = remaining <= 5 ? 'var(--lie)' : 'var(--ink)';
+}
+
+function updateLobbyPlayerList() {
+  const grid = document.getElementById('lobby-chip-grid');
+  if (!grid || !state.meta) return;
+  const players = state.roster.map(id => state.players[id]).filter(Boolean).sort((a,b)=>a.joinedAt-b.joinedAt);
+  grid.innerHTML = players.map(p => `
+    <div class="player-chip">
+      <div class="avatar" style="background:${colorFor(p.name)}">${initials(p.name)}</div>
+      ${escapeHtml(p.name)}${p.id===state.meta.hostId ? ' &middot; <span style="color:var(--accent)">host</span>' : ''}
+    </div>
+  `).join('');
+  const countEl = document.getElementById('lobby-count');
+  if (countEl) countEl.textContent = players.length;
+  const startBtn = document.getElementById('start-game-btn');
+  if (startBtn) startBtn.disabled = players.length < MIN_PLAYERS;
+}
+
+/* ============================================================
+   PHASE DRIVER — advances the game through writing/reviewing/
+   reveal/scoring as timers expire.
+
+   Every client runs this loop, but normally only the host acts:
+   the host has no grace delay, so it always wins the race under
+   normal conditions. If the host's tab disconnects or stalls,
+   every other client becomes an eligible backup after a grace
+   period (8s past the deadline) — whoever's tick fires first
+   re-verifies the phase is genuinely still stuck before writing,
+   so a late-but-not-dead host can't be stepped on, and two
+   backups racing each other just means the loser's re-check
+   finds the phase already moved and skips its own write.
+   ============================================================ */
+const HOST_GRACE_MS = 8000;
+
+function startPhaseDriver() {
+  if (state.driveHandle) clearInterval(state.driveHandle);
+  state.driveHandle = setInterval(async () => {
+    if (!state.code) return;
+    const meta = await storageGet(k.meta(state.code));
+    if (!meta) return;
+
+    const now = Date.now();
+    const overdueBy = meta.phaseEndsAt ? (now - meta.phaseEndsAt) : -1;
+    if (overdueBy < 0) return; // not due yet
+
+    const iAmHost = (meta.hostId === ME.id);
+    if (!iAmHost && overdueBy < HOST_GRACE_MS) return; // give the real host first chance
+
+    // Re-check immediately before acting, in case someone else just advanced it
+    const fresh = await storageGet(k.meta(state.code));
+    if (!fresh || fresh.phase !== meta.phase || fresh.phaseEndsAt !== meta.phaseEndsAt) return;
+
+    if (meta.phase === 'writing') await advanceFromWriting(meta);
+    else if (meta.phase === 'reviewing') await advanceFromReviewing(meta);
+    else if (meta.phase === 'reveal') await advanceFromReveal(meta);
+    else if (meta.phase === 'roundscore') await advanceFromRoundscore(meta);
+  }, 1000);
+}
+
+async function advanceFromWriting(meta) {
+  const ids = await scanRoster(state.code);
+  const players = await fetchAllPlayers(state.code, ids);
+
+  // ensure everyone has a submission for this round; backfill placeholders for no-shows
+  await Promise.all(ids.map(async id => {
+    const key = k.player(state.code, id) + ':r' + meta.currentRoundIndex;
+    const existing = await storageGet(key);
+    if (!existing) {
+      const name = players[id]?.name || 'Someone';
+      await storageSet(key, {
+        statements: [
+          `${name} didn't write anything in time`,
+          `${name} was too slow this round`,
+          `${name} forgot to submit`
+        ],
+        lieIndex: 1
+      });
+    }
+  }));
+
+  const order = ids.slice().sort((a,b) => (players[a]?.name||'').localeCompare(players[b]?.name||''));
+  meta.order = order;
+  meta.reviewTargetIndex = 0;
+  meta.phase = 'reviewing';
+  meta.phaseEndsAt = Date.now() + REVIEW_SECONDS*1000;
+  meta.lastAwards = null;
+  await storageSet(k.meta(state.code), meta);
+}
+
+async function advanceFromReviewing(meta) {
+  const targetId = meta.order[meta.reviewTargetIndex];
+  const targetSub = await storageGet(k.player(state.code, targetId) + ':r' + meta.currentRoundIndex);
+  if (!targetSub) { // shouldn't happen, but guard anyway
+    meta.phase = 'reveal';
+    meta.phaseEndsAt = Date.now() + REVEAL_SECONDS*1000;
+    await storageSet(k.meta(state.code), meta);
+    return;
+  }
+  const rosterIds = await scanRoster(state.code);
+  const voterIds = rosterIds.filter(id => id !== targetId);
+
+  const picks = await Promise.all(voterIds.map(async voterId => {
+    const p = await storageGet(k.pick(state.code, targetId, voterId));
+    return [voterId, p ? p.marks : null];
+  }));
+
+  const roundAwards = {};
+  for (const [voterId, marks] of picks) {
+    if (!marks) { roundAwards[voterId] = 0; continue; }
+    let correctCount = 0, markedCount = 0;
+    for (let idx=0; idx<3; idx++) {
+      const mark = marks[String(idx)];
+      if (!mark) continue;
+      markedCount++;
+      const actuallyLie = (idx === targetSub.lieIndex);
+      const markedAsLie = (mark === 'lie');
+      if (markedAsLie === actuallyLie) correctCount++;
+    }
+    let pts = correctCount * 10;
+    if (markedCount === 3 && correctCount === 3) pts += 20;
+    roundAwards[voterId] = pts;
+    if (pts > 0) {
+      const playerKey = k.player(state.code, voterId);
+      const player = await storageGet(playerKey);
+      if (player) {
+        player.score = (player.score || 0) + pts;
+        await storageSet(playerKey, player);
+      }
+    }
+  }
+
+  meta.lastAwards = roundAwards;
+  meta.phase = 'reveal';
+  meta.phaseEndsAt = Date.now() + REVEAL_SECONDS*1000;
+  await storageSet(k.meta(state.code), meta);
+}
+
+async function advanceFromReveal(meta) {
+  const nextTarget = meta.reviewTargetIndex + 1;
+  if (nextTarget < meta.order.length) {
+    meta.reviewTargetIndex = nextTarget;
+    meta.phase = 'reviewing';
+    meta.phaseEndsAt = Date.now() + REVIEW_SECONDS*1000;
+    meta.lastAwards = null;
+  } else {
+    meta.phase = 'roundscore';
+    meta.phaseEndsAt = Date.now() + SCOREBOARD_SECONDS*1000;
+  }
+  await storageSet(k.meta(state.code), meta);
+}
+
+async function advanceFromRoundscore(meta) {
+  const nextRound = meta.currentRoundIndex + 1;
+  if (nextRound < meta.rounds) {
+    meta.currentRoundIndex = nextRound;
+    meta.order = [];
+    meta.reviewTargetIndex = null;
+    meta.phase = 'writing';
+    meta.phaseEndsAt = Date.now() + WRITE_SECONDS*1000;
+    meta.lastAwards = null;
+  } else {
+    meta.phase = 'finished';
+  }
+  await storageSet(k.meta(state.code), meta);
+}
+
+/* ============================================================
+   SCREEN: LOBBY
+   ============================================================ */
+function screenLobby() {
+  const wrap = document.createElement('div');
+  const meta = state.meta;
+  const players = state.roster.map(id => state.players[id]).filter(Boolean).sort((a,b)=>a.joinedAt-b.joinedAt);
+
+  wrap.innerHTML = `
+    <h1>Waiting room</h1>
+    <p class="sub">Share the code below. Once everyone's in, the host starts the game.</p>
+    <div class="copy-box">
+      <div class="code">${meta.code}</div>
+      <button class="btn-secondary" id="copy-link-btn">Copy invite</button>
+    </div>
+    <div class="card">
+      <h2>Players <span class="muted" style="font-weight:400;">(<span id="lobby-count">${players.length}</span>/${MAX_PLAYERS})</span></h2>
+      <div class="chip-grid" id="lobby-chip-grid"></div>
+    </div>
+    ${state.isHost ? `
+      <div class="card">
+        <h2>Rounds</h2>
+        <p class="muted small" style="margin-top:0;">Each round, everyone writes new statements. Pick how many rounds to play.</p>
+        <div class="stepper">
+          <button id="rounds-minus">&minus;</button>
+          <div class="val" id="rounds-val">${meta.rounds}</div>
+          <button id="rounds-plus">+</button>
+          <div class="lbl">rounds</div>
+        </div>
+      </div>
+      <button class="btn-primary mt20" id="start-game-btn" ${players.length<MIN_PLAYERS?'disabled':''}>
+        ${players.length<MIN_PLAYERS ? `Need at least ${MIN_PLAYERS} players` : 'Start game'}
+      </button>
+    ` : `
+      <div class="empty-state">Waiting for the host to start the game&hellip;</div>
+    `}
+  `;
+
+  setTimeout(() => {
+    updateLobbyPlayerList();
+    const copyBtn = wrap.querySelector('#copy-link-btn');
+    copyBtn?.addEventListener('click', () => {
+      const url = window.location.href.split('?')[0] + '?room=' + meta.code;
+      navigator.clipboard?.writeText(url).then(()=>showToast('Invite link copied')).catch(()=>{
+        navigator.clipboard?.writeText(meta.code);
+        showToast('Room code copied');
+      });
+    });
+
+    if (state.isHost) {
+      const minus = wrap.querySelector('#rounds-minus');
+      const plus = wrap.querySelector('#rounds-plus');
+      const val = wrap.querySelector('#rounds-val');
+      minus?.addEventListener('click', async () => {
+        const m = await storageGet(k.meta(state.code));
+        if (!m) return;
+        m.rounds = Math.max(1, m.rounds - 1);
+        await storageSet(k.meta(state.code), m);
+        state.meta = m;
+        val.textContent = m.rounds;
+      });
+      plus?.addEventListener('click', async () => {
+        const m = await storageGet(k.meta(state.code));
+        if (!m) return;
+        m.rounds = Math.min(15, m.rounds + 1);
+        await storageSet(k.meta(state.code), m);
+        state.meta = m;
+        val.textContent = m.rounds;
+      });
+      const startBtn = wrap.querySelector('#start-game-btn');
+      startBtn?.addEventListener('click', async () => {
+        startBtn.disabled = true;
+        const rosterIds = await scanRoster(state.code);
+        if (rosterIds.length < MIN_PLAYERS) { showToast(`Need at least ${MIN_PLAYERS} players`); startBtn.disabled = false; return; }
+        const m = await storageGet(k.meta(state.code));
+        if (!m) { startBtn.disabled = false; return; }
+        m.currentRoundIndex = 0;
+        m.phase = 'writing';
+        m.phaseEndsAt = Date.now() + WRITE_SECONDS*1000;
+        await storageSet(k.meta(state.code), m);
+        state.meta = m;
+      });
+    }
+  }, 0);
+
+  return wrap;
+}
+
+/* ============================================================
+   SCREEN: WRITING
+   ============================================================ */
+function screenWriting() {
+  const wrap = document.createElement('div');
+  const meta = state.meta;
+  const me = state.players[ME.id] || {};
+  const already = !!me.statements;
+
+  wrap.innerHTML = `
+    ${timerRingHTML()}
+    <h1 class="center">Round ${meta.currentRoundIndex+1} of ${meta.rounds}</h1>
+    <p class="sub center">Write three statements about yourself. Two should be true, one should be false. Make the lie believable.</p>
+    <div class="card" id="writing-card">
+      ${already ? `
+        <div class="empty-state">
+          <div style="font-size:34px; margin-bottom:6px;">&#10003;</div>
+          <p style="margin:0; color:var(--ink); font-weight:600;">Submitted &mdash; waiting for everyone else&hellip;</p>
+        </div>
+      ` : `
+        <div id="statement-inputs"></div>
+        <p class="small muted" style="margin:10px 0 16px;">Tap the circle next to the one statement that's false.</p>
+        <button class="btn-primary" id="submit-statements-btn" disabled>Submit</button>
+      `}
+    </div>
+  `;
+
+  if (!already) {
+    const inputsDiv = wrap.querySelector('#statement-inputs');
+    for (let i=0;i<3;i++) {
+      const row = document.createElement('div');
+      row.className = 'statement-input';
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div><span class="num">${i+1}</span><span class="small muted">Statement ${i+1}</span></div>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600; color:var(--lie);">
+            <input type="radio" name="lie-pick" value="${i}" style="width:auto; accent-color:var(--lie);"> this is the lie
+          </label>
+        </div>
+        <textarea rows="2" maxlength="140" placeholder="${i===2 ? "e.g. I once met a celebrity in an airport" : "Something about you..."}"></textarea>
+        <div class="char-count">0/140</div>
+      `;
+      inputsDiv.appendChild(row);
+    }
+
+    setTimeout(() => {
+      const submitBtn = wrap.querySelector('#submit-statements-btn');
+      const textareas = wrap.querySelectorAll('textarea');
+      const radios = wrap.querySelectorAll('input[name="lie-pick"]');
+      const counts = wrap.querySelectorAll('.char-count');
+
+      function checkReady() {
+        const texts = Array.from(textareas).map(t=>t.value.trim());
+        const lieChecked = Array.from(radios).some(r=>r.checked);
+        const ready = texts.every(t=>t.length>=4) && lieChecked;
+        submitBtn.disabled = !ready;
+      }
+      textareas.forEach((t,i) => {
+        t.addEventListener('input', () => {
+          counts[i].textContent = t.value.length + '/140';
+          checkReady();
+        });
+      });
+      radios.forEach(r => r.addEventListener('change', checkReady));
+
+      submitBtn.addEventListener('click', async () => {
+        const lieIdx = parseInt(Array.from(radios).find(r=>r.checked).value, 10);
+        const texts = Array.from(textareas).map(t=>t.value.trim());
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+        const key = k.player(state.code, ME.id) + ':r' + meta.currentRoundIndex;
+        const ok = await storageSet(key, { statements: texts, lieIndex: lieIdx });
+        if (ok) {
+          state.players[ME.id] = state.players[ME.id] || {};
+          state.players[ME.id].statements = texts;
+          state.players[ME.id].lieIndex = lieIdx;
+          render();
+        } else {
+          showToast('Could not submit, try again');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit';
+        }
+      });
+    }, 0);
+  }
+
+  return wrap;
+}
+
+/* ============================================================
+   SCREEN: REVIEWING
+   ============================================================ */
+function screenReviewing() {
+  const wrap = document.createElement('div');
+  const meta = state.meta;
+  const targetId = meta.order[meta.reviewTargetIndex];
+  const target = state.players[targetId] || {};
+  const isMe = targetId === ME.id;
+  const myMarks = (state.currentPicksForTarget && state.currentPicksForTarget[ME.id]) || {};
+
+  wrap.innerHTML = `
+    ${timerRingHTML()}
+    ${progressDotsHTML(meta)}
+    <h1 class="center">${isMe ? "It's your turn!" : escapeHtml(target.name||'') + "'s statements"}</h1>
+    <p class="sub center">${isMe ? "Everyone else is marking your statements right now. Just sit tight." : "Mark each statement true or false. You can skip any you're unsure about."}</p>
+    <div id="review-statements"></div>
+    ${isMe ? `<div class="empty-state small">You can't vote on your own statements.</div>` : ''}
+  `;
+
+  const container = wrap.querySelector('#review-statements');
+  (target.statements || []).forEach((text, idx) => {
+    const myMark = myMarks[String(idx)];
+    const div = document.createElement('div');
+    div.className = 'review-statement no-hover';
+    div.innerHTML = `
+      <div class="stext" style="padding-right:0; margin-bottom:${isMe?'0':'12px'};">${escapeHtml(text)}</div>
+      ${isMe ? '' : `
+        <div class="mark-btns" style="display:flex; gap:8px;">
+          <button type="button" class="mark-btn mark-truth ${myMark==='truth'?'active':''}" data-idx="${idx}" data-mark="truth">True</button>
+          <button type="button" class="mark-btn mark-lie ${myMark==='lie'?'active':''}" data-idx="${idx}" data-mark="lie">False</button>
+        </div>
+      `}
+    `;
+    container.appendChild(div);
+  });
+
+  if (!isMe) {
+    container.querySelectorAll('.mark-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = btn.dataset.idx;
+        const mark = btn.dataset.mark;
+        const pickKey = k.pick(state.code, targetId, ME.id);
+        const existing = (await storageGet(pickKey)) || { marks: {} };
+        const current = existing.marks[idx];
+        if (current === mark) delete existing.marks[idx];
+        else existing.marks[idx] = mark;
+        const ok = await storageSet(pickKey, existing);
+        if (ok) {
+          state.currentPicksForTarget = state.currentPicksForTarget || {};
+          state.currentPicksForTarget[ME.id] = existing.marks;
+          render();
+        }
+      });
+    });
+  }
+
+  return wrap;
+}
+
+/* ============================================================
+   SCREEN: REVEAL
+   ============================================================ */
+function screenReveal() {
+  const wrap = document.createElement('div');
+  const meta = state.meta;
+  const targetId = meta.order[meta.reviewTargetIndex];
+  const target = state.players[targetId] || {};
+  const picksForTarget = state.currentPicksForTarget || {};
+  const awards = meta.lastAwards || {};
+
+  wrap.innerHTML = `
+    ${timerRingHTML()}
+    ${progressDotsHTML(meta)}
+    <h1 class="center">${escapeHtml(target.name||'')}'s lie was&hellip;</h1>
+    <div id="reveal-statements"></div>
+  `;
+
+  const container = wrap.querySelector('#reveal-statements');
+  (target.statements || []).forEach((text, idx) => {
+    const isLie = idx === target.lieIndex;
+    const votersForThis = Object.entries(picksForTarget)
+      .map(([voterId, marks]) => ({ voterId, mark: (marks||{})[String(idx)] }))
+      .filter(v => v.mark);
+    const div = document.createElement('div');
+    div.className = 'reveal-statement ' + (isLie ? 'is-lie' : 'is-truth');
+    let votersHTML = '';
+    if (votersForThis.length) {
+      votersHTML = '<div class="voter-marks">' + votersForThis.map(({voterId, mark}) => {
+        const voter = state.players[voterId];
+        const markedAsLie = (mark === 'lie');
+        const correct = (markedAsLie === isLie);
+        return `<span class="voter-mark ${correct?'correct':'wrong'}">${escapeHtml(voter?.name||'?')}</span>`;
+      }).join('') + '</div>';
+    }
+    div.innerHTML = `
+      <span class="reveal-tag">${isLie ? 'the lie' : 'true'}</span>
+      <div class="stext">${escapeHtml(text)}</div>
+      ${votersHTML}
+    `;
+    container.appendChild(div);
+  });
+
+  const scoreSummary = document.createElement('div');
+  scoreSummary.className = 'card mt20';
+  const order = Object.keys(awards);
+  if (order.length) {
+    scoreSummary.innerHTML = `<h2>Points this turn</h2>` + order.map(voterId => {
+      const voter = state.players[voterId];
+      if (!voter) return '';
+      const pts = awards[voterId];
+      return `<div class="leaderboard-row">
+        <div class="avatar" style="background:${colorFor(voter.name)}">${initials(voter.name)}</div>
+        <div class="lb-name">${escapeHtml(voter.name)}</div>
+        <div class="lb-delta">${pts>0?'+':''}${pts} pt${pts===1?'':'s'}</div>
+      </div>`;
+    }).join('');
+  } else {
+    scoreSummary.innerHTML = `<div class="empty-state small">Nobody locked in a guess this turn.</div>`;
+  }
+  wrap.appendChild(scoreSummary);
+
+  return wrap;
+}
+
+/* ============================================================
+   SCREEN: ROUND SCOREBOARD
+   ============================================================ */
+function screenScoreboard() {
+  const wrap = document.createElement('div');
+  const meta = state.meta;
+  const ranked = Object.values(state.players).sort((a,b)=>(b.score||0)-(a.score||0));
+
+  wrap.innerHTML = `
+    ${timerRingHTML()}
+    <h1 class="center">Standings after round ${meta.currentRoundIndex+1}</h1>
+    <div class="card" id="scoreboard-rows"></div>
+    <p class="sub center mt8">${meta.currentRoundIndex+1 < meta.rounds ? 'Next round starting soon&hellip;' : 'Final round complete &mdash; tallying results&hellip;'}</p>
+  `;
+  const rows = wrap.querySelector('#scoreboard-rows');
+  ranked.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'leaderboard-row';
+    row.innerHTML = `
+      <div class="rank ${i===0?'gold':''}">${i+1}</div>
+      <div class="avatar" style="background:${colorFor(p.name)}">${initials(p.name)}</div>
+      <div class="lb-name">${escapeHtml(p.name)}${p.id===ME.id?' (you)':''}</div>
+      <div class="lb-score">${p.score||0}</div>
+    `;
+    rows.appendChild(row);
+  });
+  return wrap;
+}
+
+/* ============================================================
+   SCREEN: FINAL BOARD
+   ============================================================ */
+function screenFinalBoard() {
+  const wrap = document.createElement('div');
+  const ranked = Object.values(state.players).sort((a,b)=>(b.score||0)-(a.score||0));
+  const winner = ranked[0] || { name: 'Nobody', score: 0 };
+  const meta = state.meta;
+
+  wrap.innerHTML = `
+    <div class="center" style="padding: 10px 0 6px;">
+      <div style="font-size:42px;">&#127942;</div>
+      <h1>${escapeHtml(winner.name)} wins!</h1>
+      <p class="sub">${winner.score||0} points after ${meta.rounds} round${meta.rounds===1?'':'s'}</p>
+    </div>
+    <div class="card" id="final-rows"></div>
+    <button class="btn-secondary mt20" id="back-to-landing-btn">Leave room</button>
+  `;
+  const rows = wrap.querySelector('#final-rows');
+  ranked.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'leaderboard-row';
+    row.innerHTML = `
+      <div class="rank ${i===0?'gold':''}">${i+1}</div>
+      <div class="avatar" style="background:${colorFor(p.name)}">${initials(p.name)}</div>
+      <div class="lb-name">${escapeHtml(p.name)}${p.id===ME.id?' (you)':''}</div>
+      <div class="lb-score">${p.score||0}</div>
+    `;
+    rows.appendChild(row);
+  });
+
+  setTimeout(() => {
+    wrap.querySelector('#back-to-landing-btn')?.addEventListener('click', () => {
+      if (state.pollHandle) clearInterval(state.pollHandle);
+      if (state.driveHandle) clearInterval(state.driveHandle);
+      window.history.replaceState({}, '', window.location.pathname);
+      state.screen = 'landing';
+      state.code = null;
+      state.meta = null;
+      state.roster = [];
+      state.players = {};
+      state.isHost = false;
+      render();
+    });
+  }, 0);
+
+  return wrap;
+}
+
+/* ============================================================
+   SHARED UI BITS
+   ============================================================ */
+function timerRingHTML() {
+  const circumference = 2 * Math.PI * 38;
+  return `
+    <div class="timer-ring-wrap">
+      <svg width="88" height="88" viewBox="0 0 88 88">
+        <circle cx="44" cy="44" r="38" fill="none" stroke="var(--line)" stroke-width="6"/>
+        <circle id="timer-ring-fg" cx="44" cy="44" r="38" fill="none" stroke="var(--accent)" stroke-width="6"
+          stroke-dasharray="${circumference}" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="timer-num" id="timer-num">&nbsp;</div>
+    </div>
+  `;
+}
+
+function progressDotsHTML(meta) {
+  if (!meta.order || !meta.order.length) return '';
+  const dots = meta.order.map((id, i) => {
+    let cls = 'dot';
+    if (i < meta.reviewTargetIndex) cls += ' done';
+    else if (i === meta.reviewTargetIndex) cls += ' active';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+  return `<div class="progress-dots">${dots}</div>`;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init() {
+  render();
+  updateTimerDisplay();
+})();
+</script>
+</body>
+</html>
